@@ -1,0 +1,156 @@
+name: Repo Agent
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  AGENT_REQUIRE_PR: "true" # Force PRs unless direct explicitly requested & allowed.
+  AGENT_ALLOW_DIRECT: "true" # Allow direct commit mode when explicitly requested.
+  AGENT_PR_LABEL: "agent-change"
+
+jobs:
+  parse-and-apply:
+    if: >
+      startsWith(github.event.comment.body, '/agent')
+      && (
+        github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'COLLABORATOR' ||
+        github.event.comment.author_association == 'MEMBER' ||
+        github.event.comment.author_association == 'MAINTAINER'
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Run agent command parser
+        id: agent
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPO_FULL: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          ACTOR: ${{ github.actor }}
+          AGENT_REQUIRE_PR: ${{ env.AGENT_REQUIRE_PR }}
+          AGENT_ALLOW_DIRECT: ${{ env.AGENT_ALLOW_DIRECT }}
+        run: |
+          node scripts/agent/command-runner.cjs
+
+      - name: Show agent summary
+        if: always()
+        run: |
+          echo "---- AGENT SUMMARY ----"
+          cat agent-summary.json || true
+          echo "-----------------------"
+
+      - name: Auto-format (Prettier & ESLint fix)
+        if: steps.agent.outputs.has_changes == 'true'
+        run: |
+          echo "Running auto-format..."
+          npx eslint . --ext .ts,.tsx --fix || true
+          npx prettier . --write || true
+
+      - name: Commit & push (direct mode)
+        if: steps.agent.outputs.direct == 'true' && steps.agent.outputs.has_changes == 'true'
+        run: |
+          git config user.name "Repo Agent"
+          git config user.email "agent@users.noreply.github.com"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .
+            git commit -m "agent(direct): apply changes from comment ${{ env.COMMENT_ID }}"
+            git push origin "${{ env.DEFAULT_BRANCH }}"
+          else
+            echo "No changes to commit after formatting."
+          fi
+
+      - name: Create branch & commit (PR mode)
+        if: steps.agent.outputs.direct != 'true' && steps.agent.outputs.has_changes == 'true'
+        env:
+          BRANCH: ${{ steps.agent.outputs.branch }}
+        run: |
+          git config user.name "Repo Agent"
+          git config user.email "agent@users.noreply.github.com"
+          git checkout -b "${BRANCH}"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .
+            git commit -m "agent: apply changes from comment ${{ env.COMMENT_ID }}"
+            git push origin "${BRANCH}"
+          else
+            echo "No changes to commit (possibly dry-run)."
+          fi
+
+      - name: Create or update PR (PR mode)
+        if: steps.agent.outputs.direct != 'true' && steps.agent.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ steps.agent.outputs.branch }}
+          ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
+        run: |
+          set -e
+          BASE="${DEFAULT_BRANCH}"
+          TITLE="Agent: changes from comment #${ISSUE_NUMBER}"
+          BODY_FILE=".agent_pr_body.md"
+          if [ ! -f "${BODY_FILE}" ]; then
+            echo "Agent changes requested in comment #${ISSUE_NUMBER}" > "${BODY_FILE}"
+          fi
+          {
+            echo ""
+            echo "## Original Command";
+            printf '\n```\n%s\n```\n' "${COMMENT_BODY}";
+            echo "## Action Summary";
+            if [ -f agent-summary.json ]; then
+              echo ""; echo "```json"; cat agent-summary.json; echo "```"; fi
+            echo "## Diff (names + status)";
+            git diff --name-status "${BASE}...${BRANCH}";
+          } >> "${BODY_FILE}"
+
+          EXISTING=$(gh pr list --head "${BRANCH}" --base "${BASE}" --json number --jq '.[0].number' || true)
+          if [ -n "${EXISTING}" ]; then
+            echo "PR already exists: #${EXISTING}"
+          else
+            PR_URL=$(gh pr create --title "${TITLE}" --body-file "${BODY_FILE}" --head "${BRANCH}" --base "${BASE}")
+            echo "Created PR: ${PR_URL}"
+            if [ -n "${AGENT_PR_LABEL}" ]; then
+              gh pr edit "${PR_URL}" --add-label "${AGENT_PR_LABEL}" || true
+            fi
+          fi
+
+      - name: Comment result
+        if: steps.agent.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
+        run: |
+          MSG="Agent processed command."
+          if [ "${{ steps.agent.outputs.direct }}" = "true" ]; then
+            MSG="$MSG Changes committed directly to ${DEFAULT_BRANCH}."
+          else
+            MSG="$MSG Branch: \`${{ steps.agent.outputs.branch }}\`."
+          fi
+          gh issue comment "${ISSUE_NUMBER}" --body "${MSG}"
+
+      - name: No changes notice
+        if: steps.agent.outputs.has_changes != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
+        run: |
+          gh issue comment "${ISSUE_NUMBER}" --body "Agent: no changes applied (all commands skipped or dry-run)."

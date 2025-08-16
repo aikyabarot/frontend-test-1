@@ -1,0 +1,19 @@
+{
+  "allowedPrefixes": [
+    "src/",
+    "scripts/",
+    ".github/",
+    "docs/",
+    "README.md",
+    "tailwind.config.ts",
+    "postcss.config.js",
+    ".eslintrc.cjs",
+    ".prettierrc",
+    ".agentrc.json",
+    "package.json",
+    "tsconfig.json"
+  ],
+  "deny": [".github/SECURITY.md"],
+  "maxFilesPerComment": 50,
+  "maxBytesPerFile": 200000
+}
