@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global custom styles */
+:root {
+  --header-height: 3.5rem;
+}
+
+body {
+  font-feature-settings: "kern";
+}
