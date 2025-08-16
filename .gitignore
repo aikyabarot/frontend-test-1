@@ -1,28 +1,34 @@
 # Dependencies
 node_modules/
 
-# Builds / Cache
+# Parcel cache / build
+.dist/
 dist/
-build/
 .parcel-cache/
-*.log
-pnpm-debug.log*
 
-# IDE / Editor
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Editor / IDE
 .vscode/
 .idea/
-*.swp
+
+# Coverage
+coverage/
 
 # Env
 .env
 .env.local
 .env.*.local
+!.env.example
 
-# Coverage / Tests
-coverage/
-
-# Mac / System
+# System
 .DS_Store
+Thumbs.db
 
-# Optional: lock diff noise
-package-lock.json
+# Typescript
+*.tsbuildinfo
