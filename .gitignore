@@ -1,28 +1,5 @@
-# Dependencies
-node_modules/
-
-# Builds / Cache
-dist/
-build/
-.parcel-cache/
-*.log
-pnpm-debug.log*
-
-# IDE / Editor
-.vscode/
-.idea/
-*.swp
-
-# Env
 .env
-.env.local
-.env.*.local
-
-# Coverage / Tests
-coverage/
-
-# Mac / System
+node_modules/
+.vite/
 .DS_Store
-
-# Optional: lock diff noise
-package-lock.json
+/dist/
