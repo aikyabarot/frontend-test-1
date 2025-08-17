@@ -1,8 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { ChartCard } from "@/components/charts/ChartCard";
 import { useMemo } from "react";
+
+import { ChartCard } from "@/components/charts/ChartCard";
 
 const Line = dynamic(() => import("react-chartjs-2").then(m => m.Line), { ssr: false });
 
@@ -29,9 +30,9 @@ export default function HomePage() {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { position: "top" }
+        legend: { position: "top" as const }
       },
-      interaction: { intersect: false, mode: "index" },
+      interaction: { intersect: false, mode: "index" as const },
       scales: {
         x: {
           grid: { display: false }

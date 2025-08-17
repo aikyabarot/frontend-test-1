@@ -1,4 +1,5 @@
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
+
 import { getEnv } from "./env";
 
 export interface FetchJSONOptions {
@@ -9,8 +10,8 @@ export interface FetchJSONOptions {
 }
 
 function normalizeUrl(base: string, path: string): string {
-  const b = base.replace(/\/\/+$", "");
-  const p = path.replace(/^\/+,"”);
+  const b = base.replace(/\/\/+$/, "");
+  const p = path.replace(/^\/+/, "");
   return `${b}/${p}`.replace(/(^https?:\/\/)|\/\/+/g, (m, proto) => (proto ? proto : "/"));
 }
 
@@ -36,7 +37,7 @@ function appendQuery(url: string, query?: FetchJSONOptions["query"]): string {
 function isRetryable(status: number | undefined, err: unknown): boolean {
   if (status === 429) return true;
   if (status && status >= 500) return true;
-  if ((axios as any).isAxiosError?.(err) && !(err as any).response) return true; // network
+  if (isAxiosError(err) && !err.response) return true; // network
   return false;
 }
 
@@ -57,7 +58,7 @@ export async function fetchJSON<T = unknown>(path: string, options: FetchJSONOpt
       const res = await axios.get<T>(url, { headers: { Accept: "application/json", ...headers } });
       return res.data;
     } catch (err) {
-      const axErr = (axios as any).isAxiosError?.(err) ? (err as any) : undefined;
+      const axErr = isAxiosError(err) ? err : undefined;
       const status = axErr?.response?.status as number | undefined;
       if (attempt < maxAttempts && isRetryable(status, err)) {
         const delay = retryBaseDelayMs * Math.pow(2, attempt - 1);
