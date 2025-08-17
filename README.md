@@ -1,36 +1,12 @@
-# Talent Platform (Scaffold)
+# Frontend Test 1
 
-Initial scaffold created with Vite + React + TypeScript + Tailwind.
+This project is a Next.js application.
 
-## Scripts
+## Getting Started
 
-- `dev` – start dev server
-- `build` – production build
-- `preview` – preview production build
-- `lint` – run ESLint
-- `format` – run Prettier write
+To get started, run the following command:
 
-## Structure
-
+```bash
+npm install
+npm run dev
 ```
-src/
-  components/
-  pages/
-  state/
-  utils/
-  index.css
-  main.tsx
-  App.tsx
-  routes.tsx
-```
-
-## Theming
-
-Uses a simple context toggling a `dark` class on `<html>`.
-
-## Next Steps
-
-- Integrate real auth
-- Real API base via `VITE_API_BASE`
-- Add tests (Vitest + RTL)
-- Add CI workflow
