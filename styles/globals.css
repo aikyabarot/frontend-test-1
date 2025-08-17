@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS Variables for light/dark theming */
+:root {
+  --background: 255 255 255;
+  --foreground: 23 23 23;
+  --card: 255 255 255;
+  --card-foreground: 23 23 23;
+  --muted: 244 244 245;
+  --muted-foreground: 113 113 122;
+  --accent: 229 231 235;
+  --accent-foreground: 23 23 23;
+  --border: 228 228 231;
+  --sidebar-background: 250 250 250;
+  --sidebar-foreground: 23 23 23;
+  --topbar-background: 255 255 255;
+}
+
+.dark {
+  --background: 18 18 23;
+  --foreground: 235 235 245;
+  --card: 28 28 35;
+  --card-foreground: 235 235 245;
+  --muted: 39 39 45;
+  --muted-foreground: 160 160 170;
+  --accent: 55 55 65;
+  --accent-foreground: 235 235 245;
+  --border: 55 55 65;
+  --sidebar-background: 24 24 30;
+  --sidebar-foreground: 230 230 240;
+  --topbar-background: 24 24 30;
+}
+
+body {
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
+}
+
+.bg-background { background-color: rgb(var(--background)); }
+.text-foreground { color: rgb(var(--foreground)); }
+.bg-card { background-color: rgb(var(--card)); }
+.text-card-foreground { color: rgb(var(--card-foreground)); }
+.bg-muted { background-color: rgb(var(--muted)); }
+.text-muted-foreground { color: rgb(var(--muted-foreground)); }
+.bg-accent { background-color: rgb(var(--accent)); }
+.text-accent-foreground { color: rgb(var(--accent-foreground)); }
+.bg-sidebar-background { background-color: rgb(var(--sidebar-background)); }
+.text-sidebar-foreground { color: rgb(var(--sidebar-foreground)); }
+.bg-topbar-background { background-color: rgb(var(--topbar-background)); }
+.border { border-color: rgb(var(--border)); }
